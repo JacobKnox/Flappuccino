@@ -14,7 +14,7 @@ from pygame.mixer import Sound
 from pygame.font import Font
 from pygame.image import load as Image
 from player import Player
-from background import Background
+from imageasset import ImageAsset
 from button import Button
 from bean import Bean
 from utils import *
@@ -38,17 +38,17 @@ font_small = Font('data/fonts/font.otf', 32)
 font_20 = Font('data/fonts/font.otf', 20)
 
 # get some images
-shop = Image('data/gfx/shop.png')
-shop_bg = Image('data/gfx/shop_bg.png')
-retry_button = Image('data/gfx/retry_button.png')
-logo = Image('data/gfx/logo.png')
+shop = ImageAsset('data/gfx/shop.png')
+shop_bg = ImageAsset('data/gfx/shop_bg.png')
+retry_button = ImageAsset('data/gfx/retry_button.png')
+logo = ImageAsset('data/gfx/logo.png')
 temp_title_bg = img.open('data/gfx/bg.png')
 mode = temp_title_bg.mode
 size = temp_title_bg.size
 data = temp_title_bg.tobytes()
 title_bg = pygame.image.fromstring(data, size, mode)
 title_bg.fill((255, 30.599999999999998, 0.0), special_flags=pygame.BLEND_ADD)
-shadow = Image('data/gfx/shadow.png')
+shadow = ImageAsset('data/gfx/shadow.png')
 indicators = ['data/gfx/flap_indicator.png', 'data/gfx/speed_indicator.png', 'data/gfx/beanup_indicator.png']
 
 # sounds
@@ -123,10 +123,12 @@ def event_handler() -> None:
             display = pygame.display.set_mode(event.size, HWSURFACE|DOUBLEBUF|RESIZABLE)
             display.blit(pygame.transform.scale(title_bg, display.get_rect().size), (0, 0))
             display.fill((231, 205, 183))
-            display.blit(logo, (display.get_width()/2 - logo.get_width()/2, display.get_height()/2 - logo.get_height()/2 + math.sin(time.time()*5)*5 - 25)) 
-            display.blit(retry_button, (display.get_width()/2 - retry_button.get_width()/2, (3 * display.get_height())/4 - retry_button.get_height()/2))
+            display.blit(logo.sprite, (display.get_width()/2 - logo.get_width()/2, display.get_height()/2 - logo.get_height()/2 + math.sin(time.time()*5)*5 - 25)) 
+            display.blit(retry_button.sprite, (display.get_width()/2 - retry_button.get_width()/2, (3 * display.get_height())/4 - retry_button.get_height()/2))
             start_message = font_small.render("START", True, (0, 0, 0))
             display.blit(start_message, (display.get_width()/2 - start_message.get_width()/2, (3 * display.get_height())/4 - start_message.get_height()/2))
+            shop.resize((event.size[0], shop.get_height()))
+            display.blit(shop_bg.sprite, (0, 0))
             pygame.display.flip()
 
 async def main() -> None:
@@ -134,7 +136,7 @@ async def main() -> None:
     start()
     
     # creating a list of backgrounds, with each index being an object
-    bg = [Background(), Background(), Background()]
+    bg = [ImageAsset(), ImageAsset(), ImageAsset()]
     # startingHeight = 100 (the initial y position of the player)
     starting_height = player.position.y
     
@@ -159,16 +161,16 @@ async def main() -> None:
     while title_screen:
         func_one()
         # so the user clicked, and by any change the mouse's position was on the buttons
-        if (clicked and check_collisions(mouse_x, mouse_y, 3, 3, display.get_width()/2 - retry_button.get_width()/2, 288, retry_button.get_width(), retry_button.get_height())):
+        if (clicked and check_collisions(mouse_x, mouse_y, 3, 3, display.get_width()/2 - retry_button.get_width()/2, (3 * display.get_height())/4 - retry_button.get_height()/2, retry_button.get_width(), retry_button.get_height())):
             clicked = False
             title_screen = False
             Sound.play(upgradefx)
 
         display.fill(WHITE)
         display.blit(title_bg, (0,0)) 
-        display.blit(shadow, (0,0)) 
-        display.blit(logo, (display.get_width()/2 - logo.get_width()/2, display.get_height()/2 - logo.get_height()/2 + math.sin(time.time()*5)*5 - 25)) 
-        display.blit(retry_button, (display.get_width()/2 - retry_button.get_width()/2, (3 * display.get_height())/4 - retry_button.get_height()/2))
+        display.blit(shadow.sprite, (0,0)) 
+        display.blit(logo.sprite, (display.get_width()/2 - logo.get_width()/2, display.get_height()/2 - logo.get_height()/2 + math.sin(time.time()*5)*5 - 25)) 
+        display.blit(retry_button.sprite, (display.get_width()/2 - retry_button.get_width()/2, (3 * display.get_height())/4 - retry_button.get_height()/2))
         start_message = font_small.render("START", True, (0, 0, 0))
         display.blit(start_message, (display.get_width()/2 - start_message.get_width()/2, (3 * display.get_height())/4 - start_message.get_height()/2))
 
@@ -199,9 +201,9 @@ async def main() -> None:
             display.blit(bean.sprite, (bean.position.x, bean.position.y + cam_offset))
         
         display.blit(pygame.transform.rotate(player.current_sprite, clamp(player.velocity.y, -10, 5)*player.rot_offset), (player.position.x,player.position.y + cam_offset))
-        display.blit(shop_bg, (0, 0))
+        display.blit(shop_bg.sprite, (0, 0))
         pygame.draw.rect(display,(81,48,20),(21,437,150*(player.health/100),25))
-        display.blit(shop, (0, 0))
+        display.blit(shop.sprite, (0, 0))
         
         for button in buttons:
             display.blit(button.sprite, (220 + (button.index*125), 393))
@@ -215,7 +217,7 @@ async def main() -> None:
         display.blit(bean_count_display, (72, 394))
         
         if player.dead:
-            display.blit(retry_button, (4, 4))
+            display.blit(retry_button.sprite, (4, 4))
             death_message = font_small.render("RETRY", True, (0, 0, 0))
             display.blit(death_message, (24, 8))
         
