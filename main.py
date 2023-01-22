@@ -18,6 +18,7 @@ from background import Background
 from button import Button
 from bean import Bean
 from utils import *
+from PIL import Image as img
 
 # initialize the game
 pygame.init()
@@ -25,7 +26,9 @@ pygame.init()
 # set the display
 Display.set_caption('Flappuccino')
 Display.set_icon(Bean.sprite)
-DISPLAY = Display.set_mode((640, 480), pygame.RESIZABLE | pygame.SCALED,32)
+display = Display.set_mode((640, 480), pygame.RESIZABLE | pygame.SCALED,32)
+pic = pygame.surface.Surface((50, 50))
+pic.fill((255, 100, 200))
 
 player = Player()
 
@@ -39,7 +42,11 @@ shop = Image('data/gfx/shop.png')
 shop_bg = Image('data/gfx/shop_bg.png')
 retry_button = Image('data/gfx/retry_button.png')
 logo = Image('data/gfx/logo.png')
-title_bg = Image('data/gfx/bg.png')
+temp_title_bg = img.open('data/gfx/bg.png')
+mode = temp_title_bg.mode
+size = temp_title_bg.size
+data = temp_title_bg.tobytes()
+title_bg = pygame.image.fromstring(data, size, mode)
 title_bg.fill((255, 30.599999999999998, 0.0), special_flags=pygame.BLEND_ADD)
 shadow = Image('data/gfx/shadow.png')
 indicators = ['data/gfx/flap_indicator.png', 'data/gfx/speed_indicator.png', 'data/gfx/beanup_indicator.png']
@@ -75,7 +82,7 @@ def start():
     buttons[2].set_price(30)
     # getting 5 beans
     for i in range(5):
-        beans.append(Bean(random.randrange(0, DISPLAY.get_width() - Bean().sprite.get_width()) ,i * -200 - player.position.y))
+        beans.append(Bean(random.randrange(0, display.get_width() - Bean().sprite.get_width()) ,i * -200 - player.position.y))
     Sound.play(flapfx)
 
 def func_one(toggle: bool = True) -> None:
@@ -93,20 +100,37 @@ def func_one(toggle: bool = True) -> None:
     event_handler()
 
 def event_handler() -> None:
-    global jump, clicked
+    global jump, clicked, display, temp_title_bg, title_bg
     for event in pygame.event.get():
         if event.type==pygame.KEYDOWN and event.key == K_SPACE:
             jump = True
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             clicked = True
-        if clicked and mouse_y < DISPLAY.get_height() - 90:
+        if clicked and mouse_y < display.get_height() - 90:
             jump = True
         if event.type==QUIT:
             pygame.quit()
             sys.exit()
+        if event.type == VIDEORESIZE:
+            for o in bg:
+                o.resize(event.size)
+                display.blit(o.sprite, (0, o.position))
+            temp_title_bg = temp_title_bg.resize(event.size)
+            mode = temp_title_bg.mode
+            size = temp_title_bg.size
+            data = temp_title_bg.tobytes()
+            title_bg = pygame.image.fromstring(data, size, mode)
+            display = pygame.display.set_mode(event.size, HWSURFACE|DOUBLEBUF|RESIZABLE)
+            display.blit(pygame.transform.scale(title_bg, display.get_rect().size), (0, 0))
+            display.fill((231, 205, 183))
+            display.blit(logo, (display.get_width()/2 - logo.get_width()/2, display.get_height()/2 - logo.get_height()/2 + math.sin(time.time()*5)*5 - 25)) 
+            display.blit(retry_button, (display.get_width()/2 - retry_button.get_width()/2, (3 * display.get_height())/4 - retry_button.get_height()/2))
+            start_message = font_small.render("START", True, (0, 0, 0))
+            display.blit(start_message, (display.get_width()/2 - start_message.get_width()/2, (3 * display.get_height())/4 - start_message.get_height()/2))
+            pygame.display.flip()
 
 async def main() -> None:
-    global clicked, bean_multiplier, beans, scroll
+    global clicked, bean_multiplier, beans, scroll, bg
     start()
     
     # creating a list of backgrounds, with each index being an object
@@ -119,10 +143,10 @@ async def main() -> None:
     while splash_screen_timer < 100:
         func_one(False)
         splash_screen_timer += dt
-        DISPLAY.fill((231, 205, 183))
+        display.fill((231, 205, 183))
         # fill the start message on the top of the game
         start_message = font_small.render("POLYMARS", True, (171, 145, 123))
-        DISPLAY.blit(start_message, (DISPLAY.get_width()/2 - start_message.get_width()/2, DISPLAY.get_height()/2 - start_message.get_height()/2))
+        display.blit(start_message, (display.get_width()/2 - start_message.get_width()/2, (3 * display.get_height())/4 - start_message.get_height()/2))
         # update display
         Display.update()
         await asyncio.sleep(0)
@@ -135,18 +159,18 @@ async def main() -> None:
     while title_screen:
         func_one()
         # so the user clicked, and by any change the mouse's position was on the buttons
-        if (clicked and check_collisions(mouse_x, mouse_y, 3, 3, DISPLAY.get_width()/2 - retry_button.get_width()/2, 288, retry_button.get_width(), retry_button.get_height())):
+        if (clicked and check_collisions(mouse_x, mouse_y, 3, 3, display.get_width()/2 - retry_button.get_width()/2, 288, retry_button.get_width(), retry_button.get_height())):
             clicked = False
             title_screen = False
             Sound.play(upgradefx)
 
-        DISPLAY.fill(WHITE)
-        DISPLAY.blit(title_bg, (0,0)) 
-        DISPLAY.blit(shadow, (0,0)) 
-        DISPLAY.blit(logo, (DISPLAY.get_width()/2 - logo.get_width()/2, DISPLAY.get_height()/2 - logo.get_height()/2 + math.sin(time.time()*5)*5 - 25)) 
-        DISPLAY.blit(retry_button, (DISPLAY.get_width()/2 - retry_button.get_width()/2, 288))
+        display.fill(WHITE)
+        display.blit(title_bg, (0,0)) 
+        display.blit(shadow, (0,0)) 
+        display.blit(logo, (display.get_width()/2 - logo.get_width()/2, display.get_height()/2 - logo.get_height()/2 + math.sin(time.time()*5)*5 - 25)) 
+        display.blit(retry_button, (display.get_width()/2 - retry_button.get_width()/2, (3 * display.get_height())/4 - retry_button.get_height()/2))
         start_message = font_small.render("START", True, (0, 0, 0))
-        DISPLAY.blit(start_message, (DISPLAY.get_width()/2 - start_message.get_width()/2, 292))
+        display.blit(start_message, (display.get_width()/2 - start_message.get_width()/2, (3 * display.get_height())/4 - start_message.get_height()/2))
 
         Display.update()
         await asyncio.sleep(0)
@@ -156,49 +180,49 @@ async def main() -> None:
     while True:
         func_one()
         
-        cam_offset = -player.position.y + (DISPLAY.get_height() - player.current_sprite.get_size()[1])/2
+        cam_offset = -player.position.y + (display.get_height() - player.current_sprite.get_size()[1])/2
         if(cam_offset <= 0):
             if(not player.dead):
                 player.kill(deadfx)
             scroll = False
             cam_offset = 0
         
-        DISPLAY.fill(WHITE)
+        display.fill(WHITE)
         for o in bg:
             o.set_sprite(((player.position.y/50) % 100) / 100)
-            DISPLAY.blit(o.sprite, (0, o.position))
+            display.blit(o.sprite, (0, o.position))
         color = colorsys.hsv_to_rgb(((player.position.y/50) % 100) / 100,0.5,0.5)
         current_height_marker = font.render(str(player.height), True, (color[0]*255, color[1]*255, color[2]*255, 50 ))
-        DISPLAY.blit(current_height_marker, (DISPLAY.get_width()/2 - current_height_marker.get_width()/2, cam_offset + round((player.position.y - starting_height)/DISPLAY.get_height())*DISPLAY.get_height() + player.current_sprite.get_height() - 40))
+        display.blit(current_height_marker, (display.get_width()/2 - current_height_marker.get_width()/2, cam_offset + round((player.position.y - starting_height)/display.get_height())*display.get_height() + player.current_sprite.get_height() - 40))
         
         for bean in beans:
-            DISPLAY.blit(bean.sprite, (bean.position.x, bean.position.y + cam_offset))
+            display.blit(bean.sprite, (bean.position.x, bean.position.y + cam_offset))
         
-        DISPLAY.blit(pygame.transform.rotate(player.current_sprite, clamp(player.velocity.y, -10, 5)*player.rot_offset), (player.position.x,player.position.y + cam_offset))
-        DISPLAY.blit(shop_bg, (0, 0))
-        pygame.draw.rect(DISPLAY,(81,48,20),(21,437,150*(player.health/100),25))
-        DISPLAY.blit(shop, (0, 0))
+        display.blit(pygame.transform.rotate(player.current_sprite, clamp(player.velocity.y, -10, 5)*player.rot_offset), (player.position.x,player.position.y + cam_offset))
+        display.blit(shop_bg, (0, 0))
+        pygame.draw.rect(display,(81,48,20),(21,437,150*(player.health/100),25))
+        display.blit(shop, (0, 0))
         
         for button in buttons:
-            DISPLAY.blit(button.sprite, (220 + (button.index*125), 393))
+            display.blit(button.sprite, (220 + (button.index*125), 393))
             price_display = font_small.render(str(button.price), True, (0,0,0))
-            DISPLAY.blit(price_display, (262 + (button.index*125), 408))
+            display.blit(price_display, (262 + (button.index*125), 408))
             level_display = font_20.render(f'Lvl. {button.level}', True, (200,200,200))
-            DISPLAY.blit(level_display, (234 + (button.index*125), 441))
-            DISPLAY.blit(button.type_indicator_sprite, (202 + (button.index*125), 377))
+            display.blit(level_display, (234 + (button.index*125), 441))
+            display.blit(button.type_indicator_sprite, (202 + (button.index*125), 377))
             
         bean_count_display = font_small.render(str(player.bean_count).zfill(7), True, (0,0,0))
-        DISPLAY.blit(bean_count_display, (72, 394))
+        display.blit(bean_count_display, (72, 394))
         
         if player.dead:
-            DISPLAY.blit(retry_button, (4, 4))
+            display.blit(retry_button, (4, 4))
             death_message = font_small.render("RETRY", True, (0, 0, 0))
-            DISPLAY.blit(death_message, (24, 8))
+            display.blit(death_message, (24, 8))
         
         if(scroll):
-            player.set_height(round(-(player.position.y - starting_height)/DISPLAY.get_height()))
+            player.set_height(round(-(player.position.y - starting_height)/display.get_height()))
             player.position.x += player.velocity.x*dt
-            if player.position.x < 0 or player.position.x + player.current_sprite.get_size()[0] > 640:
+            if player.position.x - 5 < 0 or player.position.x + player.current_sprite.get_size()[0] + 5 > display.get_width():
                 player.flip()
             if jump and not player.dead:
                 player.velocity.y = -player.flap_force
@@ -212,15 +236,15 @@ async def main() -> None:
                 player.kill(deadfx)
 
         for bean in beans:
-            if bean.position.y + cam_offset + 90 > DISPLAY.get_height():
-                bean.position.y -= DISPLAY.get_height()*2
-                bean.position.x = random.randrange(0, DISPLAY.get_width() - bean.sprite.get_width())
+            if bean.position.y + cam_offset + 90 > display.get_height():
+                bean.position.y -= display.get_height()*2
+                bean.position.x = random.randrange(0, display.get_width() - bean.sprite.get_width())
             if (check_collisions(player.position.x, player.position.y, player.current_sprite.get_width(), player.current_sprite.get_height(), bean.position.x, bean.position.y, bean.sprite.get_width(), bean.sprite.get_height())):
                 Sound.play(beanfx)
                 player.bean_count += 1
                 player.health = 100
-                bean.position.y -= DISPLAY.get_height() - random.randrange(0, 200)
-                bean.position.x = random.randrange(0, DISPLAY.get_width() - bean.sprite.get_width())
+                bean.position.y -= display.get_height() - random.randrange(0, 200)
+                bean.position.x = random.randrange(0, display.get_width() - bean.sprite.get_width())
 
         for button in buttons:
             if clicked and not player.dead and check_collisions(mouse_x, mouse_y, 3, 3, button.position.x, button.position.y, button.sprite.get_width(), button.sprite.get_height()):
@@ -236,14 +260,14 @@ async def main() -> None:
                     if (button.index == 2):
                         bean_multiplier += 5
                         for _ in range(bean_multiplier):
-                            beans.append(Bean(random.randrange(0, DISPLAY.get_width() - Bean().sprite.get_width()), player.position.y - DISPLAY.get_height() - random.randrange(0, 200)))
+                            beans.append(Bean(random.randrange(0, display.get_width() - Bean().sprite.get_width()), player.position.y - display.get_height() - random.randrange(0, 200)))
         
         if player.dead and clicked and check_collisions(mouse_x, mouse_y, 3, 3, 4, 4, retry_button.get_width(), retry_button.get_height()):
             start()
 
-        bg[0].position = cam_offset + round(player.position.y/DISPLAY.get_height())*DISPLAY.get_height()
-        bg[1].position = bg[0].position + DISPLAY.get_height() 
-        bg[2].position = bg[0].position - DISPLAY.get_height()
+        bg[0].position = cam_offset + round(player.position.y/display.get_height())*display.get_height()
+        bg[1].position = bg[0].position + display.get_height() 
+        bg[2].position = bg[0].position - display.get_height()
         
         Display.update()
         await asyncio.sleep(0)
