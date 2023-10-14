@@ -2,9 +2,7 @@ import pygame
 
 
 class Player:
-    position = pygame.Vector2()
-    velocity = pygame.Vector2()
-    right_sprite = pygame.image.load('data/gfx/player.png')
+    right_sprite = pygame.image.load('data/gfx/player.png').convert_alpha()
     left_sprite = pygame.transform.flip(right_sprite, True, False)
 
     def __init__(self):
@@ -17,6 +15,8 @@ class Player:
         self.flap_force = 3
         self.bean_count = 0
         self.rot_offset = -5
+        self.position = pygame.Vector2()
+        self.velocity = pygame.Vector2()
         self.current_sprite = self.right_sprite
 
     def reset(self) -> None:

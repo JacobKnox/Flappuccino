@@ -3,10 +3,11 @@ import colorsys
 
 
 class Background:
-    uncolored_sprite = pygame.image.load('data/gfx/bg.png')
+    sprite = pygame.image.load('data/gfx/bg.png').convert_alpha()
+    uncolored_sprite = pygame.image.load(
+        'data/gfx/bg.png').convert_alpha()
 
     def __init__(self):
-        self.sprite = pygame.image.load('data/gfx/bg.png')
         self.position = 0
 
     def set_sprite(self, tint: float) -> None:

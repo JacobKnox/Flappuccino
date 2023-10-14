@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Tells Unix operating systems to run with Python3 when it gets executed
 
+from player import Player
 import pygame
 import sys
 import time
@@ -13,7 +14,6 @@ from pygame.locals import *
 from pygame.mixer import Sound
 from pygame.font import Font
 from pygame.image import load as Image
-from player import Player
 from background import Background
 from button import Button
 from bean import Bean
@@ -21,27 +21,36 @@ from utils import *
 
 # initialize the game
 pygame.init()
+pygame.font.init()
+DISPLAY = Display.set_mode((640, 480), pygame.RESIZABLE | pygame.SCALED, 32)
+# set what events are allowed so the for event in pygame.event.get() doesnt have to loop throw all of the pygame events
+pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN])
 
 # set the display
 Display.set_caption('Flappuccino')
 Display.set_icon(Bean.sprite)
-DISPLAY = Display.set_mode((640, 480), pygame.RESIZABLE | pygame.SCALED, 32)
 
-player = Player()
 
 # get fonts
 font = Font('data/fonts/font.otf', 100)
 font_small = Font('data/fonts/font.otf', 32)
 font_20 = Font('data/fonts/font.otf', 20)
 
+"""
+    .convert() and .convert_alpha() are a FPS improvement as when you use the blit function the surface has to be  
+    converted to pixels then drawn with the .convert() and .convert_alpha() it converts the image to pixels at the point that 
+    it is written in the difference between .convert() and .convert_alpha() is that .convert_alpha() keeps the alpha
+    layer intact. the game may start a bit slower but later when there are a lot of bean sprites drawn to the screen
+    it is going to help with the performance 
+"""
 # get some images
-shop = Image('data/gfx/shop.png')
-shop_bg = Image('data/gfx/shop_bg.png')
-retry_button = Image('data/gfx/retry_button.png')
-logo = Image('data/gfx/logo.png')
-title_bg = Image('data/gfx/bg.png')
+shop = Image('data/gfx/shop.png').convert_alpha()
+shop_bg = Image('data/gfx/shop_bg.png').convert_alpha()
+retry_button = Image('data/gfx/retry_button.png').convert_alpha()
+logo = Image('data/gfx/logo.png').convert_alpha()
+title_bg = Image('data/gfx/bg.png').convert_alpha()
 title_bg.fill((255, 30.599999999999998, 0.0), special_flags=pygame.BLEND_ADD)
-shadow = Image('data/gfx/shadow.png')
+shadow = Image('data/gfx/shadow.png').convert_alpha()
 indicators = ['data/gfx/flap_indicator.png',
               'data/gfx/speed_indicator.png', 'data/gfx/beanup_indicator.png']
 
@@ -57,6 +66,7 @@ deadfx = pygame.mixer.Sound("data/sfx/dead" + sound_ext)
 
 # colors
 WHITE = (255, 255, 255)  # constant
+player = Player()
 
 
 def start():
